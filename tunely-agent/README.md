@@ -1,5 +1,12 @@
 # Tunely Agent
 
+[![Add-on Release](https://img.shields.io/github/v/release/tunely-eu/home-assistant-addons?label=add-on)](https://github.com/tunely-eu/home-assistant-addons/releases/latest)
+[![CI](https://github.com/tunely-eu/home-assistant-addons/actions/workflows/ci.yml/badge.svg)](https://github.com/tunely-eu/home-assistant-addons/actions/workflows/ci.yml)
+[![Release](https://github.com/tunely-eu/home-assistant-addons/actions/workflows/release.yml/badge.svg)](https://github.com/tunely-eu/home-assistant-addons/actions/workflows/release.yml)
+[![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-blue)](config.yaml)
+
+![Tunely secure HTTPS access for self-hosted services](images/secure-access.png)
+
 Tunely Agent gives Home Assistant and other self-hosted services secure HTTPS
 addresses without opening router ports.
 

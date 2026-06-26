@@ -1,8 +1,12 @@
 # Tunely Home Assistant Add-ons
 
+[![Add-on Release](https://img.shields.io/github/v/release/tunely-eu/home-assistant-addons?label=add-on)](https://github.com/tunely-eu/home-assistant-addons/releases/latest)
 [![CI](https://github.com/tunely-eu/home-assistant-addons/actions/workflows/ci.yml/badge.svg)](https://github.com/tunely-eu/home-assistant-addons/actions/workflows/ci.yml)
 [![Release](https://github.com/tunely-eu/home-assistant-addons/actions/workflows/release.yml/badge.svg)](https://github.com/tunely-eu/home-assistant-addons/actions/workflows/release.yml)
+[![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-blue)](tunely-agent/config.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+![Tunely secure HTTPS access for self-hosted services](tunely-agent/images/secure-access.png)
 
 This repository lets you install Tunely Agent as a Home Assistant add-on.
 

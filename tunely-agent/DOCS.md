@@ -24,6 +24,12 @@ Paperless-ngx, dashboards, admin tools, and webhook endpoints.
 
 Tunely publishes individual services. You choose what becomes reachable.
 
+![Tunely dashboard overview with agent, service, certificate, and traffic status](images/dashboard-overview.png)
+
+The Tunely dashboard shows whether the agent is online, which services are
+published, which HTTPS addresses are active, and whether certificates and
+traffic look healthy.
+
 ## Before You Start
 
 You need:
