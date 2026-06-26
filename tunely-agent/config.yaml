@@ -1,5 +1,5 @@
 name: "Tunely Agent"
-version: "0.1.0"
+version: "0.1.10"
 slug: "tunely_agent"
 description: "Publish selected self-hosted apps through secure Tunely HTTPS addresses."
 url: "https://github.com/tunely-eu/home-assistant-addons/tree/main/tunely-agent"
