@@ -1,0 +1,170 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Add-on version without leading v, for example 1.2.3
+        required: true
+        type: string
+      agent_version:
+        description: Agent image tag, for example v1.2.3
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/tunely-agent-home-assistant
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      agent_version: ${{ steps.release.outputs.agent_version }}
+      stable: ${{ steps.release.outputs.stable }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release metadata
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            version="${{ inputs.version }}"
+            agent_version="${{ inputs.agent_version }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+            version="${tag#v}"
+            agent_version="${tag}"
+          fi
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo "::error::version must match X.Y.Z or X.Y.Z-rc.N"
+            exit 1
+          fi
+          if [[ ! "$agent_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo "::error::agent_version must match vX.Y.Z or vX.Y.Z-rc.N"
+            exit 1
+          fi
+
+          config_version="$(awk -F': *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' tunely-agent/config.yaml)"
+          if [[ "$config_version" != "$version" ]]; then
+            echo "::error::tunely-agent/config.yaml version (${config_version}) must match release version (${version})"
+            exit 1
+          fi
+
+          stable=true
+          if [[ "$version" == *"-rc."* ]]; then
+            stable=false
+          fi
+
+          {
+            echo "version=$version"
+            echo "agent_version=$agent_version"
+            echo "stable=$stable"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ha_arch: amd64
+            platform: linux/amd64
+          - ha_arch: aarch64
+            platform: linux/arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.ha_arch }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: tunely-agent
+          file: tunely-agent/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          build-args: |
+            AGENT_IMAGE=ghcr.io/tunely-eu/agent:${{ needs.prepare.outputs.agent_version }}
+            BUILD_VERSION=${{ needs.prepare.outputs.version }}
+            BUILD_ARCH=${{ matrix.ha_arch }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-${{ matrix.ha_arch }}
+            ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}-${{ matrix.ha_arch }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/tunely-eu/home-assistant-addons
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+
+  manifest:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish multi-arch manifest
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            -t "${IMAGE_NAME}:${VERSION}" \
+            "${IMAGE_NAME}:${VERSION}-amd64" \
+            "${IMAGE_NAME}:${VERSION}-aarch64"
+
+      - name: Publish latest manifest
+        if: needs.prepare.outputs.stable == 'true'
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            -t "${IMAGE_NAME}:latest" \
+            "${IMAGE_NAME}:${VERSION}-amd64" \
+            "${IMAGE_NAME}:${VERSION}-aarch64"
+
+      - name: Create GitHub release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          name: v${{ needs.prepare.outputs.version }}
+          prerelease: ${{ needs.prepare.outputs.stable != 'true' }}
+          body: |
+            Home Assistant add-on release for Tunely Agent.
+
+            - Add-on image: `${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}`
+            - Agent image: `ghcr.io/tunely-eu/agent:${{ needs.prepare.outputs.agent_version }}`
+            - Architectures: `amd64`, `aarch64`

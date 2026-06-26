@@ -1,0 +1,4 @@
+configuration:
+  token:
+    name: Tunely Agent token
+    description: Token from the Tunely dashboard. It connects this add-on to your Tunely account.

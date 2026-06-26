@@ -1,0 +1,21 @@
+# Local output
+.work/
+.env
+.env.*
+*.log
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Temporary files
+tmp/
+*.tmp
+
+# Generated release artifacts
+dist/
+*.tar
+*.tar.gz
+*.zip

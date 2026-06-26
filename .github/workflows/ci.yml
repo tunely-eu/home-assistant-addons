@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      CI_AGENT_IMAGE: ghcr.io/tunely-eu/agent:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate repository files
+        run: |
+          set -euo pipefail
+          test -f repository.yaml
+          test -f tunely-agent/config.yaml
+          test -f tunely-agent/Dockerfile
+          test -f tunely-agent/run.sh
+          test -f tunely-agent/DOCS.md
+          test -f tunely-agent/README.md
+          grep -q '^image: "ghcr.io/tunely-eu/tunely-agent-home-assistant"$' tunely-agent/config.yaml
+          grep -q '^host_network: false$' tunely-agent/config.yaml
+          grep -q '^  token: password$' tunely-agent/config.yaml
+          ! grep -q '^  log_level:' tunely-agent/config.yaml
+          ! grep -q '^  poll_interval:' tunely-agent/config.yaml
+          ! grep -q '^  control_plane_url:' tunely-agent/config.yaml
+          grep -q '^ARG AGENT_IMAGE=' tunely-agent/Dockerfile
+          grep -q 'io.hass.type="app"' tunely-agent/Dockerfile
+          grep -q 'TUNELY_INSTALL_CHANNEL="home_assistant"' tunely-agent/run.sh
+          grep -q 'TUNELY_AGENT_STATE_DIR="/data/tunely-agent"' tunely-agent/run.sh
+
+      - name: Check shell syntax
+        run: bash -n tunely-agent/run.sh
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build add-on image
+        uses: docker/build-push-action@v6
+        with:
+          context: tunely-agent
+          file: tunely-agent/Dockerfile
+          load: true
+          push: false
+          build-args: |
+            AGENT_IMAGE=${{ env.CI_AGENT_IMAGE }}
+            BUILD_VERSION=ci
+            BUILD_ARCH=amd64
+          tags: tunely-agent-home-assistant:ci
+
+      - name: Smoke check add-on image
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint /usr/bin/tunely-agent \
+            tunely-agent-home-assistant:ci list-modules > modules.txt
+          grep -E '^tunely_agent[[:space:]]*$' modules.txt >/dev/null
+          grep -E '^dns\.providers\.tunely[[:space:]]*$' modules.txt >/dev/null
+          grep -E '^bifrost[[:space:]]*$' modules.txt >/dev/null
+          grep -E '^http\.reverse_proxy\.transport\.bifrost[[:space:]]*$' modules.txt >/dev/null
+          grep -E '^caddy\.listeners\.bifrost[[:space:]]*$' modules.txt >/dev/null

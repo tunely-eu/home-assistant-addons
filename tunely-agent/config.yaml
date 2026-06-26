@@ -1,0 +1,19 @@
+name: "Tunely Agent"
+version: "0.1.0"
+slug: "tunely_agent"
+description: "Publish selected self-hosted apps through secure Tunely HTTPS addresses."
+url: "https://github.com/tunely-eu/home-assistant-addons/tree/main/tunely-agent"
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+stage: experimental
+host_network: false
+image: "ghcr.io/tunely-eu/tunely-agent-home-assistant"
+backup: hot
+options:
+  token: ""
+schema:
+  token: password
