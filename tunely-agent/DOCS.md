@@ -124,6 +124,18 @@ This is why Tunely can be useful behind:
 The add-on publishes only the services you configure in the Tunely dashboard. It
 does not expose your whole LAN.
 
+### Optional LAN and Split-DNS Access
+
+The Agent also runs a local HTTPS listener inside the add-on container on port
+`9443`. Home Assistant does not publish this listener on the host unless you set
+an add-on network port mapping.
+
+To use LAN or split-DNS access, open the add-on **Network** settings and map the
+`9443/tcp` container port to host port `443`.
+
+If the network port is disabled, the add-on continues to work through the normal
+outbound Tunely connection only.
+
 ## Security Notes
 
 Only publish services that are intended to be reachable through your Tunely HTTPS

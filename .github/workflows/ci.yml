@@ -31,6 +31,7 @@ jobs:
           test -f tunely-agent/images/dashboard-overview.png
           grep -q '^image: "ghcr.io/tunely-eu/tunely-agent-home-assistant"$' tunely-agent/config.yaml
           grep -q '^host_network: false$' tunely-agent/config.yaml
+          grep -q '^  9443/tcp: null$' tunely-agent/config.yaml
           grep -q '^  token: password$' tunely-agent/config.yaml
           ! grep -q '^  log_level:' tunely-agent/config.yaml
           ! grep -q '^  poll_interval:' tunely-agent/config.yaml

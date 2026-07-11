@@ -1,5 +1,5 @@
 name: "Tunely Agent"
-version: "0.1.10"
+version: "0.1.11"
 slug: "tunely_agent"
 description: "Publish selected self-hosted apps through secure Tunely HTTPS addresses."
 url: "https://github.com/tunely-eu/home-assistant-addons/tree/main/tunely-agent"
@@ -11,6 +11,10 @@ boot: auto
 init: false
 stage: experimental
 host_network: false
+ports:
+  9443/tcp: null
+ports_description:
+  9443/tcp: "Local HTTPS listener for LAN and split-DNS access"
 image: "ghcr.io/tunely-eu/tunely-agent-home-assistant"
 backup: hot
 options:
